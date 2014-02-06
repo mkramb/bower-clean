@@ -15,5 +15,8 @@
     "rimraf": "~2.2.2",
     "fstream-ignore": "0.0.7",
     "q": "~0.9.6"
+  },
+  "bin": {
+    "bower-clean": "bin/bower-clean"
   }
 }
