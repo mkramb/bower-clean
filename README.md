@@ -27,7 +27,7 @@ Main parsing logic was taken from grunt-bower-clean.
 ## Usage
 
 ```
-bin/bower-clean.js --help
-bin/bower-clean.js --dryRun
-bin/bower-clean.js
+bin/bower-clean --help
+bin/bower-clean --dryRun
+bin/bower-clean
 ```
