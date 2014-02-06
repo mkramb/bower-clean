@@ -24,10 +24,17 @@ Main parsing logic was taken from grunt-bower-clean.
 }
 ```
 
+## Install
+
+```
+npm install -g bower-clean
+```
+
+
 ## Usage
 
 ```
-bin/bower-clean --help
-bin/bower-clean --dryRun
-bin/bower-clean
+bower-clean --help
+bower-clean --dryRun
+bower-clean
 ```
