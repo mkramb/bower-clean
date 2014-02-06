@@ -1,8 +1,8 @@
-## Removes files (e.g. docs, tests, etc.) from installed bower components
+## Removes files (e.g. docs, tests, etc.)
 
 Main parsing logic was taken from grunt-bower-clean.
 
-# Usage
+## Usage
 
 ```
 bin/bower-clean.js --help
