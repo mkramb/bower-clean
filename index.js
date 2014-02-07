@@ -109,15 +109,20 @@ module.exports = function(dryRun) {
           });
 
           walker.on('end', function() {
-            processed[component] = results[component];
+            processed[component] = [];
 
-            _.each(ignore[component], function(item) {
-              processed[component] = minimatch.match(
-                processed[component], item, { dot: true }
-              );
-            });
+            if (ignore[component]) {
+              processed[component] = results[component];
 
-            processed[component].reverse();
+              _.each(ignore[component], function(item) {
+                processed[component] = minimatch.match(
+                  processed[component], item, { dot: true }
+                );
+              });
+
+              processed[component].reverse();
+            }
+
             callback();
           });
         },
