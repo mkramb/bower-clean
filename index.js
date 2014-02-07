@@ -71,7 +71,10 @@ module.exports = function(dryRun) {
     })
     .on('end', function (list) {
       var dirs = extractComponentDirs(list);
-      var whitelist = [".bower.json", ".jshintrc"];
+      var whitelist = [
+        '.bower.json',
+        '.jshintrc'
+      ];
 
       var results = {};
       var processed = {};
@@ -147,5 +150,6 @@ module.exports = function(dryRun) {
           process.stdout.write(output.join(''));
         }
       );
-    });
+    }
+  );
 };
