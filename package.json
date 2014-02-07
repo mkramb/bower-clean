@@ -1,6 +1,6 @@
 {
   "name": "bower-clean",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "index.js",
   "author": "Mitja Kramberger <mitja.kramberger@gmail.com>",
   "license": "MIT",
