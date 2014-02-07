@@ -1,6 +1,6 @@
-## Removes files (e.g. docs, tests, etc.)
+## bower-clean
 
-Main parsing logic was taken from grunt-bower-clean.
+Remove files (e.g. docs, tests, etc.) from installed bower component. For matching it uses minimatch.
 
 ## Configuration
 
@@ -18,8 +18,8 @@ Main parsing logic was taken from grunt-bower-clean.
     "underscore": "1.5.2"
   },
   "dependenciesIgnore": {
-    "jquery": ["**/!(jquery.js)"],
-    "underscore": ["**/!(underscore.js)"]
+    "jquery": [ "!**/jquery.js" ],
+    "underscore": [ "!**/underscore.js" ]
   }
 }
 ```
