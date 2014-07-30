@@ -3,62 +3,52 @@
 var _ = require('lodash');
 var util = require('util');
 var path = require('path');
+var fs = require('extfs');
 
-var fs = require('fs');
 var minimatch = require('minimatch');
-
-var walk = require('walk');
 var async = require('async');
 var bower = require('bower');
+var walk = require('walk');
 
-function extractComponentDirs(list) {
-  var dirs = {};
+function extractComponents(list) {
+  var components = {};
 
-  function d(l) {
+  function callback(l) {
     _.each(l.dependencies, function (info, component) {
       if (info.canonicalDir) {
-        dirs[component] = info.canonicalDir;
+        components[component] = info.canonicalDir;
       }
 
-      d(info);
+      callback(info);
     });
   }
 
-  d(list);
-  return dirs;
+  callback(list);
+  return components;
+}
+
+function isWhitelisted(path) {
+  var whitelist = ['.bower.json', '.jshintrc'];
+
+  return !!_.find(whitelist, function (w) {
+    return endsWith(path, "/" + w);
+  });
 }
 
 function endsWith(str, suffix) {
   return str.indexOf(suffix, str.length - suffix.length) !== -1;
 }
 
-var whitelist = ['.bower.json', '.jshintrc'];
+function sortByLength(a, b) {
+    a = a.toString().length;
+    b = b.toString().length;
 
-function whitelisted(path) {
-  return !!_.find(whitelist, function (w) {
-    return endsWith(path, "/" + w);
-  });
-}
-
-function deleteFolderRecursive(path) {
-  if (fs.existsSync(path)) {
-    fs.readdirSync(path).forEach(function(file,index) {
-      var curPath = util.format('%s/%s', path, file);
-
-      if (fs.statSync(curPath).isDirectory()) {
-        deleteFolderRecursive(curPath);
-      } else {
-        fs.unlinkSync(curPath);
-      }
-    });
-
-    fs.rmdirSync(path);
-  }
+    return a < b ?
+      1 : (a > b ? -1 : 0);
 }
 
 module.exports = function(dryRun) {
-  var basePath = process.cwd();
-  var ignore = require(path.join(basePath, 'bower.json')).dependenciesIgnore;
+  var ignore = require(path.join(process.cwd(), 'bower.json')).dependenciesIgnore;
 
   if (!ignore || _.isEmpty(ignore)) {
     throw 'No configuration provided';
@@ -66,31 +56,30 @@ module.exports = function(dryRun) {
 
   bower.commands
     .list({}, { offline: true })
+
     .on('error', function (err) {
       console.error(err.message);
     })
-    .on('end', function (list) {
-      var dirs = extractComponentDirs(list);
-      var whitelist = [
-        '.bower.json',
-        '.jshintrc'
-      ];
 
-      var results = {};
+    .on('end', function (list) {
+      var components = extractComponents(list);
       var processed = {};
 
       async.each(
-        _.keys(dirs),
+        _.keys(components),
         function(component, callback) {
-          results[component] = [];
+          processed[component] = {
+            directories: [],
+            files: []
+          };
 
-          var walker  = walk.walk(dirs[component], {
+          var walker = walk.walk(components[component], {
             followLinks: false
           });
 
           walker.on('directories', function (root, stats, next) {
             _.each(stats, function(stat) {
-              results[component].push(
+              processed[component].directories.push(
                 util.format('%s/%s', root, stat.name)
               );
             });
@@ -101,26 +90,23 @@ module.exports = function(dryRun) {
           walker.on('file', function(root, stat, next) {
             var path = util.format('%s/%s', root, stat.name);
 
-            if (!whitelisted(path)) {
-              results[component].push(path);
+            if (!isWhitelisted(path)) {
+              processed[component].files.push(path);
             }
 
             next();
           });
 
           walker.on('end', function() {
-            processed[component] = [];
-
             if (ignore[component]) {
-              processed[component] = results[component];
-
               _.each(ignore[component], function(item) {
-                processed[component] = minimatch.match(
-                  processed[component], item, { dot: true }
+                processed[component].files = minimatch.match(
+                  processed[component].files, item, { dot: true }
                 );
               });
 
-              processed[component].reverse();
+              processed[component].files.sort(sortByLength);
+              processed[component].directories.sort(sortByLength);
             }
 
             callback();
@@ -129,27 +115,27 @@ module.exports = function(dryRun) {
         function() {
           var output = [];
 
-          _.each(processed, function(files, component) {
-            output.push(util.format("= %s\n", component));
+          _.each(processed, function(item, component) {
+            var directories = item.directories;
+            var files = item.files;
 
-            if (!files.length) {
-              output.push("  /\n");
-            }
+            output.push(util.format("= %s\n", component));
 
             _.each(files, function(path) {
               output.push(util.format("  - %s\n", path));
 
               if (!dryRun) {
-                if (fs.lstatSync(path).isDirectory()) {
-                  deleteFolderRecursive(path);
-                }
-                else {
-                  fs.unlinkSync(path);
-                }
+                fs.removeSync(path);
               }
             });
 
             output.push("\n");
+
+            _.each(directories, function(path) {
+              if (fs.isEmptySync(path)) {
+                fs.removeSync(path);
+              }
+            });
           });
 
           process.stdout.write(output.join(''));
